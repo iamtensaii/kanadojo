@@ -17,6 +17,8 @@ interface TTSState {
 
 export const useJapaneseTTS = () => {
   const silentMode = useThemeStore(state => state.silentMode);
+  const pronunciationVoiceName = useThemeStore(state => state.pronunciationVoiceName);
+  const setPronunciationVoiceName = useThemeStore(state => state.setPronunciationVoiceName);
   const [state, setState] = useState<TTSState>({
     isPlaying: false,
     isSupported: false,
@@ -72,10 +74,24 @@ export const useJapaneseTTS = () => {
             return a.name.localeCompare(b.name);
           });
 
+        // Pick preferred voice if persisted; otherwise default to first Japanese voice
+        const preferred = pronunciationVoiceName
+          ? japaneseVoices.find(v => v.name === pronunciationVoiceName) || null
+          : null;
+
+        // If no stored preference, default to the first Japanese voice and persist it
+        if (!preferred && japaneseVoices[0]) {
+          try {
+            setPronunciationVoiceName(japaneseVoices[0].name);
+          } catch {
+            // no-op if store write fails
+          }
+        }
+
         setState(prev => ({
           ...prev,
           availableVoices: japaneseVoices,
-          currentVoice: japaneseVoices[0] || null,
+          currentVoice: preferred || japaneseVoices[0] || null,
         }));
 
         // Fallback: If no Japanese voices, use any available voice
@@ -94,6 +110,13 @@ export const useJapaneseTTS = () => {
               voice: fallbackVoice,
             },
           }));
+
+          // Persist fallback voice as default
+          try {
+            setPronunciationVoiceName(fallbackVoice.name);
+          } catch {
+            // no-op
+          }
         }
       };
 
@@ -199,7 +222,12 @@ export const useJapaneseTTS = () => {
 
   const setVoice = useCallback((voice: JapaneseVoice) => {
     setState(prev => ({ ...prev, currentVoice: voice }));
-  }, []);
+    try {
+      setPronunciationVoiceName(voice?.name ?? null);
+    } catch {
+      // no-op if store unavailable
+    }
+  }, [setPronunciationVoiceName]);
 
   // Method to refresh voices
   const refreshVoices = useCallback(() => {
