@@ -26,6 +26,10 @@ interface ThemeState {
   
   pronunciationPitch: number;
   setPronunciationPitch: (pitch: number) => void;
+
+  // Preferred TTS voice (by name)
+  pronunciationVoiceName: string | null;
+  setPronunciationVoiceName: (voiceName: string | null) => void;
 }
 
 const useThemeStore = create<ThemeState>()(
@@ -48,7 +52,10 @@ const useThemeStore = create<ThemeState>()(
       pronunciationSpeed: 0.8,
       setPronunciationSpeed: speed => set({ pronunciationSpeed: speed }),
       pronunciationPitch: 1.0,
-      setPronunciationPitch: pitch => set({ pronunciationPitch: pitch })
+      setPronunciationPitch: pitch => set({ pronunciationPitch: pitch }),
+
+      pronunciationVoiceName: null,
+      setPronunciationVoiceName: voiceName => set({ pronunciationVoiceName: voiceName })
     }),
 
     {

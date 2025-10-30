@@ -4,6 +4,7 @@ import { buttonBorderStyles } from '@/static/styles';
 import useThemeStore from '@/store/useThemeStore';
 import { useClick } from '@/lib/hooks/useAudio';
 import { AudioLines, VolumeX, Volume2, Settings } from 'lucide-react';
+import { useJapaneseTTS } from '@/lib/hooks/useJapaneseTTS';
 // import{Command, KeyboardOff} from 'lucide-react'
 // import HotkeyReference from './HotkeyReference';
 
@@ -23,6 +24,10 @@ const Behavior = () => {
   const setPronunciationSpeed = useThemeStore(state => state.setPronunciationSpeed);
   const pronunciationPitch = useThemeStore(state => state.pronunciationPitch);
   const setPronunciationPitch = useThemeStore(state => state.setPronunciationPitch);
+  const pronunciationVoiceName = useThemeStore(state => state.pronunciationVoiceName);
+  const setPronunciationVoiceName = useThemeStore(state => state.setPronunciationVoiceName);
+
+  const { availableVoices, currentVoice, setVoice, refreshVoices, speak } = useJapaneseTTS();
 
   /*   const hotkeysOn = useThemeStore(state => state.hotkeysOn);
   const setHotkeys = useThemeStore(state => state.setHotkeys);
@@ -175,6 +180,55 @@ const Behavior = () => {
 
       {pronunciationEnabled && (
         <>
+          <h4 className='text-lg'>Pronunciation voice:</h4>
+          <div className='flex flex-col gap-2'>
+            <div className='flex gap-3 items-center'>
+            <select
+              className={clsx(
+                'w-full p-3 rounded-md',
+                'bg-[var(--card-color)] border-2 border-[var(--border-color)]',
+                'text-[var(--secondary-color)]'
+              )}
+              value={pronunciationVoiceName ?? currentVoice?.name ?? ''}
+              onFocus={() => refreshVoices()}
+              onChange={(e) => {
+                playClick();
+                const name = e.target.value;
+                const selected = availableVoices.find(v => v.name === name) || null;
+                if (selected) setVoice(selected);
+                setPronunciationVoiceName(selected?.name ?? null);
+              }}
+            >
+              {availableVoices.length === 0 && (
+                <option value=''>Loading voices...</option>
+              )}
+              {availableVoices.map(v => (
+                <option key={v.name} value={v.name}>
+                  {v.name} {v.lang ? `(${v.lang})` : ''}
+                </option>
+              ))}
+            </select>
+            <button
+              className={clsx(
+                buttonBorderStyles,
+                'px-3 py-2 whitespace-nowrap text-sm text-[var(--secondary-color)]'
+              )}
+              onClick={() => {
+                playClick();
+                // Use a short Japanese sample for preview
+                speak('こんにちは');
+              }}
+              title='Preview selected voice'
+              type='button'
+            >
+              Test voice
+            </button>
+            </div>
+            <div className='text-xs text-[var(--secondary-color)]'>
+              Current: {pronunciationVoiceName ?? currentVoice?.name ?? 'Default'}
+            </div>
+          </div>
+
           <h4 className='text-lg'>Pronunciation speed:</h4>
           <div className='flex flex-col gap-2'>
             <input

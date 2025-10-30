@@ -17,8 +17,9 @@ interface TTSState {
 
 export const useJapaneseTTS = () => {
   const silentMode = useThemeStore(state => state.silentMode);
-  const pronunciationVoiceName = useThemeStore(state => state.pronunciationVoiceName);
-  const setPronunciationVoiceName = useThemeStore(state => state.setPronunciationVoiceName);
+  // Access optional fields with a loose selector to avoid type drift
+  const pronunciationVoiceName = useThemeStore(state => (state as any).pronunciationVoiceName as string | null);
+  const setPronunciationVoiceName = useThemeStore(state => (state as any).setPronunciationVoiceName as (v: string | null) => void);
   const [state, setState] = useState<TTSState>({
     isPlaying: false,
     isSupported: false,
@@ -154,13 +155,12 @@ export const useJapaneseTTS = () => {
 
       const utterance = new SpeechSynthesisUtterance(text);
       
-      // Set language for Japanese text
-      utterance.lang = 'ja-JP';
-      
-      // Set voice with fallback support
+      // Choose voice (respect user selection) and align language with voice when possible
       const selectedVoice = options?.voice || state.currentVoice;
       if (selectedVoice) {
         utterance.voice = selectedVoice.voice;
+        // Align utterance language to selected voice
+        if (selectedVoice.lang) utterance.lang = selectedVoice.lang;
       } else {
         // Fallback: try to find any available voice
         const voices = speechSynthesis.getVoices();
@@ -168,8 +168,12 @@ export const useJapaneseTTS = () => {
           // Try to find a Japanese voice first, then fall back to any voice
           const japaneseVoice = voices.find(v => v.lang.startsWith('ja'));
           utterance.voice = japaneseVoice || voices[0];
+          utterance.lang = (japaneseVoice || voices[0]).lang || 'ja-JP';
         }
       }
+
+      // Final safety default
+      if (!utterance.lang) utterance.lang = 'ja-JP';
 
       // Set speech parameters
       utterance.rate = options?.rate || 0.8;
